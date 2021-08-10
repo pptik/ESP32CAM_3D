@@ -6,6 +6,7 @@
 #include <ESP32_FTPClient.h>
 #define LAMP 4
 
+
 // kamera_1_20 : 7e0b7094-98b0-4706-9b2b-b86e7585b1f6
 // kamera_2_21 : 57860369-b272-485f-b899-3a72632016a9
 // kamera_3_22 : 2aa2cb1c-ce47-46bb-94b3-79bc1b1335ed
@@ -35,18 +36,26 @@ const char* WIFI_SSID = "ESP32CAM_3D";
 const char* WIFI_PASS = "12345678";
 
 const char *TOPIC = "3d";  // Topic to subcribe to
-const char *TOPIC_Report = "report_3d";  // Topic to subcribe to
-const char* mqtt_server = "192.168.4.219"; 
+const char *TOPIC_Report = "report_3d"; 
+const char *TOPIC_Report_cek = "report_3d_cek"; // Topic to subcribe to
+const char* mqtt_server = "192.168.1.2"; 
 const char* mqtt_user = "/lana:lana";
 const char* mqtt_pass= "lana";
 
-const char* CL = "kamera_3d_16";//nama alat **************yg diubah
-const char* client_id= "bdd73c96-d454-4944-8789-aa857baa7dcc"; // **************yg diubah
+// **************yg diubah
 
+const char* kode = "2"; 
+const char* check_num = "cek_2"; 
+const char* CL = "kamera_3d_2";
+const char* client_id= "57860369-b272-485f-b899-3a72632016a9"; 
+const int ip = 23;
+const char* flash = "flash_2";
 
-char ftp_server[] = "192.168.4.5";
-char ftp_user[]   = "iotdevice";
-char ftp_pass[]   = "1234567890";
+// **************yg dubah
+
+char ftp_server[] = "192.168.1.2";
+char ftp_user[]   = "Camera_3D";
+char ftp_pass[]   = "12345678";
 
 ESP32_FTPClient ftp (ftp_server,ftp_user,ftp_pass, 5000, 2);
 
@@ -56,10 +65,10 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 static auto loRes = esp32cam::Resolution::find(320, 240);
-static auto hiRes = esp32cam::Resolution::find(800, 600);
+static auto hiRes = esp32cam::Resolution::find(1280, 1024);
 
 // Set your Static IP address
-IPAddress local_IP(192, 168, 1, 35); //**************yg diubah
+IPAddress local_IP(192, 168, 1, ip); //**************yg diubah
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 IPAddress primaryDNS(8, 8, 8, 8);   //optional
@@ -155,9 +164,9 @@ int FTP_uploadImage(int64_t t , unsigned char * pdata, unsigned int size, String
 
   Serial.print("FTP_uploadImage=");
   Serial.println(size);
-  char loc[100] = "/iotdevice/ftpcam/3d/temp/";
-
-  ftp.OpenConnection();
+  char loc[100] = "/data/";
+  int port = 21;
+  ftp.OpenConnection(port);
   
   sprintf(filename,"%s.jpg", CL);
 
@@ -171,7 +180,7 @@ int FTP_uploadImage(int64_t t , unsigned char * pdata, unsigned int size, String
   ftp.CloseConnection();
   
   char buf[100];
-  sprintf(buf, "File has been sent to %s%s",loc,filename);
+  sprintf(buf, "[INFO] File has been sent to %s%s",loc,filename);
   client.publish(TOPIC_Report, buf);
   Serial.println("Send Report Done!");
   
@@ -190,12 +199,58 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println('\n'); 
   Serial.print("] ");
   Serial.println(response);
-  if(response == "on")  // Turn the light on
+  if(response == "on")  
     {
       capture_ftpupload();
       Serial.println("[INFO] Sukses Upload FTP!");
       
     }
+  if(response == "cek")
+  {
+      digitalWrite(LAMP, HIGH);
+      delay(550);
+      digitalWrite(LAMP, LOW);
+      char r_cek[100];
+      sprintf(r_cek, "[INFO] Camera Number ID : %s READY!", CL);
+      client.publish(TOPIC_Report_cek, r_cek);     
+    
+  }
+  if(response == check_num) //************** yang diubah .....
+  {
+      digitalWrite(LAMP, HIGH);
+      delay(550);
+      digitalWrite(LAMP, LOW);
+      char r_cek[100];
+      sprintf(r_cek, "[INFO] Camera Number ID : %s READY!", CL);
+      client.publish(TOPIC_Report_cek, r_cek); 
+  }
+  if(response == kode)
+  {
+      capture_ftpupload();
+      Serial.println("[INFO] Sukses Upload FTP!");
+  }
+  if(response == "flash")
+  {
+      capture_ftpupload();
+      Serial.println("[INFO] Sukses Upload FTP!");
+      digitalWrite(LAMP, HIGH);
+      delay(550);
+      digitalWrite(LAMP, LOW);
+  }
+  if(response == "flash")
+  {
+      digitalWrite(LAMP, HIGH);
+      capture_ftpupload();
+      Serial.println("[INFO] Sukses Upload FTP!");      
+      digitalWrite(LAMP, LOW);
+  }
+  if(response == flash)
+  {
+      digitalWrite(LAMP, HIGH);
+      capture_ftpupload();
+      Serial.println("[INFO] Sukses Upload FTP!");      
+      digitalWrite(LAMP, LOW);
+  }
   else{
     Serial.println("[INFO] False Command!");
     
@@ -216,6 +271,9 @@ void reconnect() {
       digitalWrite(LAMP, HIGH);
       delay(550);
       digitalWrite(LAMP, LOW);
+      char r_cek2[100];
+      sprintf(r_cek2, "[INFO] Camera Number ID : %s READY!", CL);
+      client.publish(TOPIC_Report_cek, r_cek2);
       
 
     } else {
